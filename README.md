@@ -193,9 +193,19 @@ src/
 - **Border Radius**: 12-20px for cards, 14-16px for buttons
 - **Spacing**: 8px base grid
 - **Cards**: Subtle 1px borders (#21262D) for depth -->
-<!-- 
-## Screenshots
 
+## Screenshots
+<img  width="270" height="600" alt="1" src="https://github.com/user-attachments/assets/705c27ee-73ef-404a-9453-72ea40c52ea3" />
+<img  width="270" height="600" alt="2" src="https://github.com/user-attachments/assets/2547cf7b-5edb-462d-933e-d6f2c8aed980" />
+<img  width="270" height="600" alt="3" src="https://github.com/user-attachments/assets/ff1dd652-1d8b-44ba-a2f3-dd1acb0b3442" />
+<img  width="270" height="600" alt="4" src="https://github.com/user-attachments/assets/31f97471-2dad-4402-b986-5ba2bcb17682" />
+<img  width="270" height="600" alt="5" src="https://github.com/user-attachments/assets/549a95c9-79b8-40de-8b7d-0bf320678241" />
+<img  width="270" height="600" alt="6" src="https://github.com/user-attachments/assets/edaa8e84-dce1-44c1-ba7e-54742f1d84ed" />
+<img  width="270" height="600" alt="7" src="https://github.com/user-attachments/assets/0a3097cb-793e-4069-beb2-d5ed0b4aff98" />
+<img  width="270" height="600" alt="8" src="https://github.com/user-attachments/assets/ff20f2a5-f55a-40cc-b382-e6ba4556421d" />
+<img  width="270" height="600" alt="9" src="https://github.com/user-attachments/assets/f9fda2ef-ee1b-4522-9ba8-4e1f249d5bb9" />
+
+<!-- 
 | Splash | Permissions | Home Dashboard |
 |--------|-------------|----------------|
 | Dark screen with shield logo | Sensor access cards | Score ring + stats |
