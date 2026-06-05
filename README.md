@@ -21,6 +21,9 @@ SafeDrive monitors driving behavior in real-time using device sensors (Accelerom
 - **Drive History** — Browse past drives with filtering (All/Best/Latest/Worst)
 - **Drive Details** — Deep-dive into any past drive with event timeline and charts
 
+## Demo Video
+![Demo Video Link]()
+
 ## Tech Stack
 
 | Technology | Version | Purpose |
@@ -78,14 +81,23 @@ Score = max(0, 100 - Σ(event_deductions))
 - **Minimum score**: 0
 - **Deductions**: Applied per detected event (see table above)
 
-### Safety Rating Tiers
+<!-- ### Safety Rating Tiers
 
 | Score Range | Rating | Color |
 |-------------|--------|-------|
 | 90 – 100 | Excellent | Green (#3FB950) |
 | 75 – 89 | Good | Steel Blue (#58A6FF) |
 | 50 – 74 | Fair | Amber (#D29922) |
-| 0 – 49 | Poor | Red (#F85149) |
+| 0 – 49 | Poor | Red (#F85149) | -->
+
+### Safety Rating Tiers
+
+| Score Range | Rating |
+|-------------|--------|
+| 90 – 100 | Excellent |
+| 75 – 89 | Good |
+| 50 – 74 | Fair |
+| 0 – 49 | Poor |
 
 ## How to Run Locally
 
@@ -100,8 +112,8 @@ Score = max(0, 100 - Σ(event_deductions))
 
 ```bash
 # Clone the repo
-git clone <repository-url>
-cd safe-drive
+git clone https://github.com/shiwamshahare/safe-drive-apk.git
+cd safe-drive-apk
 
 # Install dependencies
 bun install
