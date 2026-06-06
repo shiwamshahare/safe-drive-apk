@@ -22,7 +22,7 @@ SafeDrive monitors driving behavior in real-time using device sensors (Accelerom
 - **Drive Details** — Deep-dive into any past drive with event timeline and charts
 
 ## Demo Video
-![Demo Video Link]()
+![Demo Video Link](https://drive.google.com/file/d/1ie-K7xEHvuAFBN9wnqc1FIUMzlcm33Eq/view?usp=drivesdk)
 
 ## Tech Stack
 
