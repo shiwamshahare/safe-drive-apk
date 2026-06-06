@@ -1,230 +1,306 @@
 # SafeDrive — Driving Behavior Analysis App
 
-> A mobile application that uses device sensors to analyze driving behavior and generate a driving safety score.
+> A React Native mobile app that uses device sensors to detect risky driving events in real-time and generate a driving safety score.
 
 ![Expo SDK](https://img.shields.io/badge/Expo_SDK-55-blue)
 ![React Native](https://img.shields.io/badge/React_Native-0.83-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)
 ![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-orange)
 
+---
+
+## 🔗 Links
+
+| Resource | Link |
+|----------|------|
+| **GitHub Repository** | https://github.com/shiwamshahare/safe-drive-apk |
+| **Demo Video** | [📹 Watch Demo](https://drive.google.com/file/d/1ie-K7xEHvuAFBN9wnqc1FIUMzlcm33Eq/view?usp=drivesdk) |
+
+---
+
 ## Project Overview
 
-SafeDrive monitors driving behavior in real-time using device sensors (Accelerometer, Gyroscope, Device Motion, and Magnetometer). It detects risky driving events like harsh braking, sharp turns, and phone handling, then calculates a driving safety score from 0-100 with detailed analytics.
+SafeDrive monitors driving behavior in real-time using four built-in device sensors — Accelerometer, Gyroscope, Device Motion, and Magnetometer. The app detects six categories of risky driving events (harsh braking, harsh acceleration, sharp turns, aggressive steering, excessive movement, phone handling) and calculates a live driving safety score from 0–100.
 
 ### Key Features
 
-- **Start/End Drive** — One-tap session management with confirmation modals
-- **Real-time Sensor Monitoring** — Live Accelerometer, Gyroscope, Device Motion, Magnetometer data
-- **Event Detection** — 6 types of risky driving events detected in real-time
-- **Driving Score** — Score starts at 100, deductions for each event
-- **Drive Summary** — Post-drive analytics with score ring, event breakdown, score timeline
-- **Drive History** — Browse past drives with filtering (All/Best/Latest/Worst)
-- **Drive Details** — Deep-dive into any past drive with event timeline and charts
+- **Drive Sessions** — One-tap start/stop with confirmation modals and `expo-keep-awake` to prevent screen-off during drives
+- **Real-Time Sensor Monitoring** — Live display of Accelerometer, Gyroscope, Device Motion, and Magnetometer values at 10 Hz
+- **6-Type Event Detection** — Threshold-based detection with cooldown periods and low/medium/high severity classification
+- **Live Score Updates** — Score decrements instantly whenever an event is detected; score timeline recorded throughout the drive
+- **Drive Summary** — Post-drive screen with animated score ring, event breakdown chart, score-over-time line chart, and motivational message
+- **Drive History** — Persistent storage of all past drives via AsyncStorage with filters (All / Best / Latest / Worst)
+- **Drive Details** — Deep-dive into any historical drive with event timeline and charts
+- **Onboarding Flow** — Splash screen → Permission request → Dashboard
 
-## Demo Video
-**📹[Demo Video Link](https://drive.google.com/file/d/1ie-K7xEHvuAFBN9wnqc1FIUMzlcm33Eq/view?usp=drivesdk)**
+---
 
 ## Tech Stack
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| Expo SDK | 55.0.0 | Framework |
-| React Native | 0.83.6 | UI Framework |
-| TypeScript | 5.9 | Type Safety |
-| expo-sensors | 55.x | Accelerometer, Gyroscope, DeviceMotion, Magnetometer |
-| expo-router | 55.x | File-based routing |
-| react-native-reanimated | 4.2.1 | Score ring animation |
-| react-native-svg | 15.x | Score ring, timeline charts |
-| @react-native-async-storage/async-storage | 2.2.0 | Session persistence |
-| expo-haptics | 55.x | Haptic feedback |
-| expo-keep-awake | 55.x | Screen-on during drives |
-| @expo-google-fonts/poppins | 0.4.x | Typography |
+| Expo SDK | 55.0.26 | App framework |
+| React Native | 0.83.6 | UI framework |
+| TypeScript | 5.9 | Static type safety |
+| expo-sensors | ~55.0.15 | Accelerometer, Gyroscope, DeviceMotion, Magnetometer |
+| expo-router | ~55.0.16 | File-based screen navigation |
+| react-native-reanimated | 4.2.1 | Animated toast notifications |
+| react-native-svg | 15.15.3 | Score ring gauge and score timeline chart |
+| @react-native-async-storage/async-storage | 2.2.0 | Local session persistence |
+| expo-haptics | ~55.0.14 | Haptic feedback on events |
+| expo-keep-awake | ~55.0.8 | Prevent screen-off during active drives |
+| @expo-google-fonts/poppins | ^0.4.1 | Typography |
+
+---
 
 ## Sensors Used
 
-| Sensor | API | Purpose |
-|--------|-----|---------|
-| **Accelerometer** | `expo-sensors/Accelerometer` | Detect harsh braking & acceleration (x/y/z linear acceleration) |
-| **Gyroscope** | `expo-sensors/Gyroscope` | Detect sharp turns & aggressive steering (x/y/z rotation rate) |
-| **Device Motion** | `expo-sensors/DeviceMotion` | Detect excessive movement & phone handling (combined motion + rotation) |
-| **Magnetometer** | `expo-sensors/Magnetometer` | Compass heading display (optional, not scored) |
+| Sensor | API | What It Detects |
+|--------|-----|-----------------|
+| **Accelerometer** | `expo-sensors/Accelerometer` | Linear acceleration on X/Y/Z axes — used to detect braking and acceleration events |
+| **Gyroscope** | `expo-sensors/Gyroscope` | Rotation rate on X/Y/Z axes — used to detect sharp turns and aggressive steering |
+| **DeviceMotion** | `expo-sensors/DeviceMotion` | Combined acceleration + rotation (Euler angles + rotation rate) — used to detect excessive movement and phone handling |
+| **Magnetometer** | `expo-sensors/Magnetometer` | Magnetic field / compass heading — displayed on the live sensor dashboard (optional, not scored) |
 
-All sensors update at **100ms intervals** (10 Hz) for battery efficiency.
+All sensors subscribe at a **100 ms update interval (10 Hz)** via `setUpdateInterval(100)`. This balances detection accuracy with battery consumption. Permissions for Device Motion (required on iOS) are requested before the first drive via `DeviceMotion.requestPermissionsAsync()`. On Android, sensors are auto-granted.
+
+### Sensor Architecture
+
+```
+Device Sensors
+      │
+      ▼
+SensorService (singleton)
+  ├── Accelerometer.addListener()
+  ├── Gyroscope.addListener()
+  ├── DeviceMotion.addListener()
+  └── Magnetometer.addListener()
+      │
+      ▼ SensorSnapshot (all 4 sensors bundled)
+      │
+      ▼
+EventDetectionEngine.processSensorData()
+      │
+      ▼ DetectedEvent (type, severity, deduction, snapshot)
+      │
+      ▼
+ScoringEngine.calculateIncrementalScore()
+      │
+      ▼
+React State → UI update
+```
+
+---
 
 ## Event Detection Strategy
 
-Each event type uses specific sensor data and threshold-based detection with cooldown periods to prevent duplicate detections.
+Each event uses a specific sensor axis and a threshold comparison. A **cooldown period** prevents the same event from triggering repeatedly for the same incident.
 
-| Event | Sensor | Detection Logic | Threshold | Cooldown | Deduction |
-|-------|--------|-----------------|-----------|----------|-----------|
-| **Harsh Braking** | Accelerometer Z-axis | Delta between consecutive Z readings (negative = deceleration) | `\|Δa\| > 8.0 m/s²` | 3s | **-5** |
-| **Harsh Acceleration** | Accelerometer Z-axis | Delta between consecutive Z readings (positive = acceleration) | `\|Δa\| > 7.0 m/s²` | 3s | **-5** |
-| **Sharp Turn** | Gyroscope Y-axis | Absolute rotation rate on yaw axis | `\|ω\| > 2.5 rad/s` | 2s | **-3** |
-| **Aggressive Steering** | Gyroscope X+Y axes | Combined rotation magnitude | `√(ωx² + ωy²) > 3.0 rad/s` | 3s | **-3** |
-| **Excessive Movement** | DeviceMotion acceleration | Acceleration magnitude sustained for 1 second | `√(ax² + ay² + az²) > 12.0 m/s²` for 1s | 5s | **-2** |
-| **Phone Handling** | DeviceMotion rotation rate | Delta in rotation rate across all axes | `Δrotation > 1.5 rad/s` combined | 10s | **-10** |
+### Detection Table
 
-### Severity Levels
+| Event | Sensor | Logic | Threshold | Cooldown | Score Deduction |
+|-------|--------|-------|-----------|----------|-----------------|
+| **Harsh Braking** | Accelerometer Z-axis | Delta between consecutive Z readings; **negative** delta = deceleration | `Δz < −8.0 m/s²` | 3 s | **−5 pts** |
+| **Harsh Acceleration** | Accelerometer Z-axis | Delta between consecutive Z readings; **positive** delta = acceleration | `Δz > 7.0 m/s²` | 3 s | **−5 pts** |
+| **Sharp Turn** | Gyroscope Y-axis | Absolute yaw rotation rate | `|ωy| > 2.5 rad/s` | 2 s | **−3 pts** |
+| **Aggressive Steering** | Gyroscope X + Y axes | Combined rotation magnitude | `√(ωx² + ωy²) > 3.0 rad/s` | 3 s | **−3 pts** |
+| **Excessive Movement** | DeviceMotion acceleration | Acceleration magnitude **sustained** for 1 second | `√(ax² + ay² + az²) > 12.0 m/s²` for ≥ 1 s | 5 s | **−2 pts** |
+| **Phone Handling** | DeviceMotion rotationRate | Combined delta across all rotation rate axes between consecutive readings | `√(Δα² + Δβ² + Δγ²) > 1.5 rad/s` | 10 s | **−10 pts** |
 
-Each detected event is assigned a severity (low/medium/high) based on how far the sensor reading exceeds the threshold:
-- **Low** — Just above threshold
-- **Medium** — 25-50% above threshold
-- **High** — 50%+ above threshold
+### Severity Classification
+
+Each detected event is classified into a severity level based on how far the reading exceeds its threshold:
+
+| Severity | Criterion |
+|----------|-----------|
+| **Low** | Reading just above threshold |
+| **Medium** | 25–50% above threshold |
+| **High** | 50%+ above threshold |
+
+For example, harsh braking:
+- Low: `|Δz|` between 8.0 and 10.0 m/s²
+- Medium: `|Δz|` between 10.0 and 12.0 m/s²
+- High: `|Δz|` > 12.0 m/s²
+
+### Why These Thresholds?
+
+- **Braking/Acceleration (8.0 / 7.0 m/s²)**: Normal driving produces acceleration changes well below 3–4 m/s². Emergency braking typically exceeds 8 m/s². The asymmetry (8 vs 7) reflects that braking tends to produce sharper delta spikes than acceleration from rest.
+- **Sharp Turn (2.5 rad/s)**: A typical lane change at highway speed produces ~0.5–1.0 rad/s. Aggressive cornering exceeds 2.5 rad/s.
+- **Aggressive Steering (3.0 rad/s combined)**: Higher composite threshold to avoid overlap with single-axis sharp turn.
+- **Excessive Movement (12.0 m/s² for 1 s)**: Short spikes from road bumps are common; the 1-second sustain requirement filters out one-off bumps.
+- **Phone Handling (1.5 rad/s delta, 10 s cooldown)**: Picking up or repositioning a phone produces abrupt rotation changes. The long cooldown (10 s) prevents accidental multiple detections from a single grab.
+
+### Delta-Based Detection (Braking & Acceleration)
+
+Rather than using raw accelerometer values (which include gravity), the engine computes the **delta** between consecutive Z-axis readings:
+
+```typescript
+const deltaZ = snapshot.accelerometer.z - this.prevAccelZ;
+if (deltaZ < -THRESHOLDS.HARSH_BRAKING) { /* harsh braking */ }
+if (deltaZ > THRESHOLDS.HARSH_ACCELERATION) { /* harsh acceleration */ }
+```
+
+This makes detection **mounting-position independent** — it doesn't matter whether the phone is flat or portrait; only the sudden *change* is measured.
+
+---
 
 ## Driving Score Calculation
 
+### Formula
+
 ```
-Score = max(0, 100 - Σ(event_deductions))
+Score = max(0, 100 − Σ(event_deductions))
 ```
 
 - **Starting score**: 100
-- **Minimum score**: 0
-- **Deductions**: Applied per detected event (see table above)
+- **Minimum score**: 0 (score cannot go negative)
+- Each detected event subtracts its deduction from the current score immediately
 
-<!-- ### Safety Rating Tiers
+### Real-Time Incremental Updates
 
-| Score Range | Rating | Color |
-|-------------|--------|-------|
-| 90 – 100 | Excellent | Green (#3FB950) |
-| 75 – 89 | Good | Steel Blue (#58A6FF) |
-| 50 – 74 | Fair | Amber (#D29922) |
-| 0 – 49 | Poor | Red (#F85149) | -->
+```typescript
+// On every event detected:
+const result = scoringEngine.calculateIncrementalScore(currentScore, newEvent);
+// result.score = max(0, currentScore - event.deduction)
+```
+
+A `scoreHistory` array records `{ time: elapsed_ms, score }` on every event, allowing the score-over-time chart to be rendered in the summary screen.
 
 ### Safety Rating Tiers
 
-| Score Range | Rating |
-|-------------|--------|
-| 90 – 100 | Excellent |
-| 75 – 89 | Good |
-| 50 – 74 | Fair |
-| 0 – 49 | Poor |
+| Score Range | Rating | Meaning |
+|-------------|--------|---------|
+| 90 – 100 | **Excellent** | Outstanding, safe driver |
+| 75 – 89 | **Good** | Safe with minor issues |
+| 50 – 74 | **Fair** | Room for improvement |
+| 0 – 49 | **Poor** | Unsafe driving detected |
+
+---
+
+## Project Structure
+
+```
+src/
+├── app/                          # Expo Router screens
+│   ├── _layout.tsx               # Root layout (fonts, splash, stack navigation)
+│   ├── index.tsx                 # Entry redirect → splash
+│   ├── splash.tsx                # 2.5s animated splash screen
+│   ├── permissions.tsx           # Sensor permission request screen
+│   ├── summary.tsx               # Post-drive summary (score, events, timeline)
+│   ├── drive-details.tsx         # Historical drive deep-dive
+│   └── (tabs)/
+│       ├── _layout.tsx           # Bottom tab bar configuration
+│       ├── index.tsx             # Home dashboard (avg score, stats, last drive)
+│       ├── drive.tsx             # Active drive recording screen
+│       └── history.tsx           # Drive history list with filters
+│
+├── components/                   # Reusable UI components
+│   ├── ScoreRing.tsx             # Animated circular score gauge (SVG)
+│   ├── SensorCard.tsx            # Live sensor values display card
+│   ├── EventBadge.tsx            # Detected event row with icon + severity
+│   ├── StatCard.tsx              # Single metric display card
+│   ├── DriveListItem.tsx         # History list row
+│   ├── SafetyRatingBadge.tsx     # Rating pill (Excellent / Good / Fair / Poor)
+│   ├── ConfirmModal.tsx          # Confirmation dialog (start/end drive)
+│   ├── EmptyState.tsx            # No-data placeholder
+│   ├── ErrorState.tsx            # Error placeholder
+│   ├── EventBreakdownChart.tsx   # Bar chart of event counts per type
+│   └── ScoreTimeline.tsx         # Score-over-time line chart (SVG)
+│
+├── services/                     # Core business logic (framework-independent)
+│   ├── sensorService.ts          # Unified sensor manager (start/stop/availability)
+│   ├── eventDetectionEngine.ts   # Threshold-based event detection with cooldowns
+│   ├── scoringEngine.ts          # Score calculation, rating, motivational messages
+│   └── storageService.ts         # AsyncStorage read/write/delete for sessions
+│
+├── hooks/                        # React hooks
+│   ├── useFonts.ts               # Poppins font loading via expo-font
+│   ├── useTheme.ts               # Dark theme access
+│   ├── useSensors.ts             # Standalone sensor hook (availability check)
+│   ├── useDriveSession.ts        # Full drive lifecycle: start → record → stop → save
+│   └── useDriveHistory.ts        # Load, filter, and delete stored sessions
+│
+├── theme/
+│   ├── colors.ts                 # Dark "Midnight Obsidian" palette with named tokens
+│   └── fonts.ts                  # Poppins font family presets
+│
+└── types/
+    └── index.ts                  # All TypeScript interfaces + THRESHOLDS + EVENT_META
+```
+
+---
 
 ## How to Run Locally
 
 ### Prerequisites
 
 - Node.js 18+
-- Bun (or npm/yarn)
-- Expo CLI (`npx expo`)
-- Android device or emulator (sensors don't work on web)
+- Bun (`npm install -g bun`) or npm
+- Expo Go app installed on your Android/iOS device **or** an Android emulator with Play Services
 
 ### Setup
 
 ```bash
-# Clone the repo
+# 1. Clone the repository
 git clone https://github.com/shiwamshahare/safe-drive-apk.git
 cd safe-drive-apk
 
-# Install dependencies
+# 2. Install dependencies
 bun install
 # or: npm install
 
-# Start Expo dev server
+# 3. Start the Expo development server
 npx expo start
 
-# Run on Android device
-npx expo start --android
+# 4. Scan the QR code with Expo Go (Android/iOS)
+#    or press 'a' to open on a connected Android device/emulator
 ```
 
-<!-- ### Building APK
+> ⚠️ **Sensors do not work in a web browser or iOS simulator.** Use a physical Android/iOS device for full sensor functionality.
+
+### Build APK (Optional)
 
 ```bash
 # Install EAS CLI
 npm install -g eas-cli
 
-# Configure build
-eas build:configure
-
-# Build APK (Android)
+# Build Android APK
 eas build --platform android --profile preview
-
-# Or build locally (requires Android SDK)
-npx expo run:android
-``` -->
-
-<!-- ## Project Architecture
-
 ```
-src/
-├── app/                         # Expo Router screens
-│   ├── _layout.tsx              # Root layout (fonts, splash, stack)
-│   ├── index.tsx                # Initial redirect → splash
-│   ├── splash.tsx               # Splash screen (2.5s)
-│   ├── permissions.tsx          # Sensor permission request
-│   ├── summary.tsx              # Post-drive summary
-│   ├── drive-details.tsx        # Historical drive details
-│   └── (tabs)/                  # Bottom tab navigator
-│       ├── _layout.tsx          # Tab bar configuration
-│       ├── index.tsx            # Home dashboard
-│       ├── drive.tsx            # Active drive recording
-│       └── history.tsx          # Drive history list
-├── components/                  # Reusable UI components
-│   ├── ScoreRing.tsx            # Animated circular score gauge
-│   ├── SensorCard.tsx           # Live sensor data display
-│   ├── EventBadge.tsx           # Event notification badge
-│   ├── StatCard.tsx             # Stat metric display
-│   ├── DriveListItem.tsx        # History list row
-│   ├── SafetyRatingBadge.tsx    # Rating pill badge
-│   ├── ConfirmModal.tsx         # Confirmation dialog
-│   ├── EmptyState.tsx           # No data placeholder
-│   ├── ErrorState.tsx           # Error placeholder
-│   ├── EventBreakdownChart.tsx  # Event counts chart
-│   └── ScoreTimeline.tsx        # Score-over-time line chart
-├── services/                    # Core business logic
-│   ├── sensorService.ts         # Unified sensor manager
-│   ├── eventDetectionEngine.ts  # Threshold-based event detection
-│   ├── scoringEngine.ts         # Score calculation
-│   └── storageService.ts        # AsyncStorage persistence
-├── hooks/                       # React hooks
-│   ├── useFonts.ts              # Poppins font loading
-│   ├── useTheme.ts              # Dark theme provider
-│   ├── useSensors.ts            # Real-time sensor data
-│   ├── useDriveSession.ts       # Drive lifecycle management
-│   └── useDriveHistory.ts       # Stored sessions management
-├── theme/                       # Design tokens
-│   ├── colors.ts                # Dark palette with peach accents
-│   └── fonts.ts                 # Poppins font presets
-└── types/
-    └── index.ts                 # Shared TypeScript types & thresholds
-``` -->
+
+---
 
 ## Assumptions
 
-1. **Phone mounting**: The phone is assumed to be mounted on the dashboard or held relatively still during normal driving. Thresholds are calibrated for this position.
-2. **Sensor availability**: Accelerometer and Gyroscope are assumed available on all modern smartphones. Magnetometer is optional.
-3. **Distance estimation**: Distance is estimated based on duration and average city driving speed (~30 km/h), not GPS. GPS integration would require `expo-location`.
-4. **Offline-first**: All data is stored locally via AsyncStorage. No backend/cloud sync.
-5. **Android focus**: The primary target is Android APK. iOS requires motion permission which is handled but not the primary deployment target.
-6. **Battery**: Sensor update interval is 100ms (10 Hz) to balance between detection accuracy and battery efficiency.
+1. **Phone mounting**: The phone is assumed to be mounted on the dashboard or windshield in portrait orientation. Thresholds are calibrated for a mounted position; hand-held use may produce false positives.
 
-<!-- ## Design System
+2. **Sensor availability**: Accelerometer and Gyroscope are assumed available on all modern smartphones (manufactured after 2015). The Magnetometer is treated as optional and does not affect the score.
 
-- **Theme**: "Midnight Obsidian" — Dark-only (#0D1117 background)
-- **Accent**: Steel Blue (#58A6FF, #79C0FF)
-- **Typography**: Poppins (Regular, Medium, SemiBold, Bold)
-- **Border Radius**: 12-20px for cards, 14-16px for buttons
-- **Spacing**: 8px base grid
-- **Cards**: Subtle 1px borders (#21262D) for depth -->
+3. **Distance estimation**: GPS is not used. Distance is estimated as `(duration_hours × 30 km/h)` assuming an average city driving speed of 30 km/h. This is a simplification documented in the UI.
+
+4. **Offline-first**: All drive session data is stored locally on-device via AsyncStorage. There is no backend or cloud sync.
+
+5. **Android-first**: The primary deployment target is Android APK. iOS motion permission is handled via `DeviceMotion.requestPermissionsAsync()` but iOS is a secondary target.
+
+6. **Single sensor orientation**: The detection logic assumes the Z-axis of the accelerometer aligns with the forward/backward axis of the vehicle (typical for dashboard-mounted portrait phones). Detection uses delta values rather than absolute values to partially compensate for different orientations.
+
+7. **10 Hz sampling**: Sensors update every 100 ms. This is sufficient to detect events lasting 200 ms or more (typical braking events last 500 ms–2 s). Very short-duration micro-events may be missed.
+
+---
 
 ## Screenshots
-<img  width="270" height="600" alt="1" src="https://github.com/user-attachments/assets/705c27ee-73ef-404a-9453-72ea40c52ea3" />
-<img  width="270" height="600" alt="2" src="https://github.com/user-attachments/assets/2547cf7b-5edb-462d-933e-d6f2c8aed980" />
-<img  width="270" height="600" alt="3" src="https://github.com/user-attachments/assets/ff1dd652-1d8b-44ba-a2f3-dd1acb0b3442" />
-<img  width="270" height="600" alt="4" src="https://github.com/user-attachments/assets/31f97471-2dad-4402-b986-5ba2bcb17682" />
-<img  width="270" height="600" alt="5" src="https://github.com/user-attachments/assets/549a95c9-79b8-40de-8b7d-0bf320678241" />
-<img  width="270" height="600" alt="6" src="https://github.com/user-attachments/assets/edaa8e84-dce1-44c1-ba7e-54742f1d84ed" />
-<img  width="270" height="600" alt="7" src="https://github.com/user-attachments/assets/0a3097cb-793e-4069-beb2-d5ed0b4aff98" />
-<img  width="270" height="600" alt="8" src="https://github.com/user-attachments/assets/ff20f2a5-f55a-40cc-b382-e6ba4556421d" />
-<img  width="270" height="600" alt="9" src="https://github.com/user-attachments/assets/f9fda2ef-ee1b-4522-9ba8-4e1f249d5bb9" />
 
-<!-- 
-| Splash | Permissions | Home Dashboard |
-|--------|-------------|----------------|
-| Dark screen with shield logo | Sensor access cards | Score ring + stats |
+<img width="270" height="600" alt="Splash Screen" src="https://github.com/user-attachments/assets/705c27ee-73ef-404a-9453-72ea40c52ea3" />
+<img width="270" height="600" alt="Permissions Screen" src="https://github.com/user-attachments/assets/2547cf7b-5edb-462d-933e-d6f2c8aed980" />
+<img width="270" height="600" alt="Home Dashboard" src="https://github.com/user-attachments/assets/ff1dd652-1d8b-44ba-a2f3-dd1acb0b3442" />
+<img width="270" height="600" alt="Active Drive" src="https://github.com/user-attachments/assets/31f97471-2dad-4402-b986-5ba2bcb17682" />
+<img width="270" height="600" alt="Live Sensor Data" src="https://github.com/user-attachments/assets/549a95c9-79b8-40de-8b7d-0bf320678241" />
+<img width="270" height="600" alt="Drive Summary" src="https://github.com/user-attachments/assets/edaa8e84-dce1-44c1-ba7e-54742f1d84ed" />
+<img width="270" height="600" alt="Event Breakdown" src="https://github.com/user-attachments/assets/0a3097cb-793e-4069-beb2-d5ed0b4aff98" />
+<img width="270" height="600" alt="Drive History" src="https://github.com/user-attachments/assets/ff20f2a5-f55a-40cc-b382-e6ba4556421d" />
+<img width="270" height="600" alt="Drive Details" src="https://github.com/user-attachments/assets/f9fda2ef-ee1b-4522-9ba8-4e1f249d5bb9" />
 
-| Active Drive | Drive Summary | Drive History |
-|-------------|---------------|---------------|
-| Timer + live sensors | Score + event breakdown | Filterable list | -->
+---
 
 ## License
 
